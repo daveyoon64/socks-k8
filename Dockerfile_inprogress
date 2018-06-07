@@ -1,0 +1,24 @@
+# FROM ubuntu:14.04
+FROM alpine:3.6
+MAINTAINER David Yoon <daveyoon64@gmail.com>
+
+RUN apk update && apk add \
+    py-pip build-base pcre-dev python-dev \
+    nginx supervisor gcc libc-dev linux-headers \
+    shadow
+RUN pip install https://github.com/unbit/uwsgi/archive/uwsgi-2.0.zip#egg=uwsgi
+# RUN usermod -u 1000 www-data
+# RUN groupadd www-data && groupmod -g 1000 www-data
+RUN mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
+COPY nginx/flask.conf /etc/nginx/sites-available/
+COPY supervisor/supervisord.conf /etc/supervisord.conf
+COPY app /var/www/app
+
+RUN mkdir -p /var/log/nginx/app /var/log/uwsgi/app /var/log/supervisor \
+    && ln -s /etc/nginx/sites-available/flask.conf /etc/nginx/sites-enabled/flask.conf \
+    && echo "daemon off;" >> /etc/nginx/nginx.conf \
+    &&  pip install -r /var/www/app/requirements.txt
+#    && chown -R www-data:www-data /var/www/app \
+#    && chown -R www-data:www-data /var/log
+
+CMD ["/usr/bin/supervisord"]
